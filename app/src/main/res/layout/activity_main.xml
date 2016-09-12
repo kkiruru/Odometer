@@ -8,9 +8,12 @@
 
     <FrameLayout
         android:id="@+id/data_odometer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
+        android:layout_width="match_parent"
+        android:layout_height="92dp">
+        <com.kkiruru.dataodometer.Odometer
+            android:id="@+id/odometer"
+            android:layout_width="match_parent"
+            android:layout_height="92dp" />
     </FrameLayout>
 
 
