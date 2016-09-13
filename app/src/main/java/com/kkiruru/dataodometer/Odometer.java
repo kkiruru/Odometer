@@ -1,9 +1,7 @@
 package com.kkiruru.dataodometer;
 
 import android.content.Context;
-import android.support.annotation.ColorRes;
 import android.support.v4.content.ContextCompat;
-import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
@@ -198,7 +196,7 @@ public class Odometer extends LinearLayout {
             }
         } else {
             if ( mScrollNumber != null ){
-                mScrollNumber.decrease(value);
+                mScrollNumber.decrease(-value);
             }
         }
     }
