@@ -37,13 +37,11 @@ public class ScrollNumber extends View {
     private int mTextColor = 0xf6337b;
     private Typeface mTypeface;
 
-    private OnOdomenterInteraction mOnOdomenterInteraction;
+    private OdomenterInteraction mOdomenterInteraction;
 
-    interface OnOdomenterInteraction {
+    interface OdomenterInteraction {
         void onCarry();
-
         void onRoundDown();
-
         void onComplete();
     }
 
@@ -182,8 +180,8 @@ public class ScrollNumber extends View {
         } else {
             rearrange();
 
-            if (mOnOdomenterInteraction != null) {
-                mOnOdomenterInteraction.onComplete();
+            if (mOdomenterInteraction != null) {
+                mOdomenterInteraction.onComplete();
             }
         }
 
@@ -222,11 +220,11 @@ public class ScrollNumber extends View {
         mNextNum = number + direction;
 
         if (mCurNum % 10 == 0) {
-            if (mOnOdomenterInteraction != null) {
+            if (mOdomenterInteraction != null) {
                 if (direction == 1) {
-                    mOnOdomenterInteraction.onCarry();
+                    mOdomenterInteraction.onCarry();
                 }else if ( direction == -1 ){
-                    mOnOdomenterInteraction.onRoundDown();
+                    mOdomenterInteraction.onRoundDown();
                 }
             }
         }
@@ -250,6 +248,7 @@ public class ScrollNumber extends View {
 
         Log.d("ScrollNumber", "drawNext : [ " + mNextNum + " -> " + drawNumber + " ], y =" + (y + mTextHeight / 2));
     }
+
 
     private void drawSelf(Canvas canvas) {
         int y = getMeasuredHeight() / 2;
@@ -275,6 +274,16 @@ public class ScrollNumber extends View {
         return this.mTargetNum;
     }
 
+
+    public void adjust(int num){
+        if( 0 <= num ){
+            increase(num);
+        }else{
+            decrease(num);
+        }
+    }
+
+
     public void increase(int num) {
         mTargetNum = mTargetNum + num;
         direction = 1;
@@ -285,15 +294,16 @@ public class ScrollNumber extends View {
 
 
     public void decrease(int num) {
-        mTargetNum = mTargetNum - num;
+        mTargetNum = mTargetNum + num;
         direction = -1;
         mOffset = 0;
         mDeltaNum = Math.abs(mTargetNum - mCurNum);
         invalidate();
     }
 
-    public void setOnOdomenterInteractionListener(OnOdomenterInteraction listener) {
-        mOnOdomenterInteraction = listener;
+
+    public void setOdomenterInteractionListener(OdomenterInteraction listener) {
+        mOdomenterInteraction = listener;
     }
 
 }

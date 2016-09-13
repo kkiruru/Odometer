@@ -91,7 +91,7 @@ public class Odometer extends LinearLayout {
         mScrollNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
         mScrollNumber.setInterpolator(mInterpolator);
         mScrollNumber.setNumber(val);
-        mScrollNumber.setOnOdomenterInteractionListener( new ScrollNumber.OnOdomenterInteraction(){
+        mScrollNumber.setOdomenterInteractionListener( new ScrollNumber.OdomenterInteraction(){
             @Override
             public void onCarry() {
                 Log.e("Odometer", "onCarry");
