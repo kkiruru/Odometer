@@ -17,12 +17,14 @@ import android.view.animation.Interpolator;
  * Created by wuhaojie on 2016/7/15 11:36.
  */
 public class ScrollNumber extends View {
-
-    private int mDeltaNum;
-    private int mCurNum;
-    private int mNextNum;
-    private int mTargetNum;
     private Context mContext;
+
+    private int mDeltaNum = 0;
+    private int mCurNum = 0;
+    private int mNextNum = 0;
+    private int mTargetNum = 0;
+
+    private int direction = 1; // 1 or -1
 
     private float mOffset;
     private Paint mPaint;
@@ -34,6 +36,17 @@ public class ScrollNumber extends View {
     private int mTextSize = dp2px(90);
     private int mTextColor = 0xf6337b;
     private Typeface mTypeface;
+
+    private OnOdomenterInteraction mOnOdomenterInteraction;
+
+    interface OnOdomenterInteraction {
+        void onCarry();
+
+        void onRoundDown();
+
+        void onComplete();
+    }
+
 
     public ScrollNumber(Context context) {
         this(context, null);
@@ -68,6 +81,12 @@ public class ScrollNumber extends View {
             }
         }, delay);
     }
+
+
+    public void setNumber(final int curr) {
+        setFromNumber(curr);
+    }
+
 
     public void setTextSize(int textSize) {
         this.mTextSize = dp2px(textSize);
@@ -128,7 +147,6 @@ public class ScrollNumber extends View {
         }
         result = mode == MeasureSpec.AT_MOST ? Math.min(result, val) : result;
 
-
 //        return result + getPaddingTop() + getPaddingBottom()+dp2px(40);
         return result + dp2px(2);
     }
@@ -157,9 +175,15 @@ public class ScrollNumber extends View {
     protected void onDraw(Canvas canvas) {
         if (mCurNum != mTargetNum) {
             postDelayed(mScrollRunnable, 0);
-            if (mOffset <= -1) {
+            if (mOffset <= -direction) {
                 mOffset = 0;
-                calNum(mCurNum + 1);
+                calNum(mCurNum + direction);
+            }
+        } else {
+            rearrange();
+
+            if (mOnOdomenterInteraction != null) {
+                mOnOdomenterInteraction.onComplete();
             }
         }
 
@@ -172,27 +196,48 @@ public class ScrollNumber extends View {
 //        canvas.restore();
     }
 
+
+    private void rearrange() {
+        mCurNum = Math.abs(mCurNum) % 10;
+        mTargetNum = mCurNum;
+        mDeltaNum = Math.abs(mTargetNum - mCurNum);
+    }
+
+
     private void setFromNumber(int number) {
-        if (number < 0 || number > 9)
-            throw new RuntimeException("invalidate number , should in [0,9]");
-        calNum(number);
+        mCurNum = Math.abs(number) % 10;
         mOffset = 0;
         invalidate();
     }
 
 
-    private void calNum(int number) {
-        number = number == -1 ? 9 : number;
-        number = number == 10 ? 0 : number;
-        mCurNum = number;
-        mNextNum = number + 1 == 10 ? 0 : number + 1;
+    private void setTargetNumber(int nextNum) {
+        this.mTargetNum = nextNum;
+        invalidate();
     }
+
+
+    private void calNum(int number) {
+        mCurNum = number;
+        mNextNum = number + direction;
+
+        if (mCurNum % 10 == 0) {
+            if (mOnOdomenterInteraction != null) {
+                if (direction == 1) {
+                    mOnOdomenterInteraction.onCarry();
+                }else if ( direction == -1 ){
+                    mOnOdomenterInteraction.onRoundDown();
+                }
+            }
+        }
+    }
+
 
     private Runnable mScrollRunnable = new Runnable() {
         @Override
         public void run() {
             float x = (float) (1 - 1.0 * (mTargetNum - mCurNum) / mDeltaNum);
-            mOffset -= 0.3f * (1 - mInterpolator.getInterpolation(x) + 0.1);
+            mOffset = mOffset - (float) (0.3f * (1 - mInterpolator.getInterpolation(x) + 0.1) * direction);
             invalidate();
         }
     };
@@ -200,23 +245,21 @@ public class ScrollNumber extends View {
 
     private void drawNext(Canvas canvas) {
         int y = getMeasuredHeight() * 3 / 2;
-//        int y = getMeasuredHeight();
-        canvas.drawText(mNextNum + "", mTextCenterX, y + mTextHeight / 2, mPaint);
-        Log.d("ScrollNumber", "drawNext : [" + mNextNum + "], y =" + (y + mTextHeight / 2));
+        int drawNumber = (Math.abs(mNextNum)) % 10;
+        canvas.drawText(drawNumber + "", mTextCenterX, y + mTextHeight / 2, mPaint);
+
+        Log.d("ScrollNumber", "drawNext : [ " + mNextNum + " -> " + drawNumber + " ], y =" + (y + mTextHeight / 2));
     }
 
     private void drawSelf(Canvas canvas) {
         int y = getMeasuredHeight() / 2;
-//        int y = 0;
-        canvas.drawText(mCurNum + "", mTextCenterX, y + mTextHeight / 2, mPaint);
-        Log.d("ScrollNumber", "drawSelf : [" + mCurNum + "], y =" + (y + mTextHeight / 2));
+
+        int drawNumber = (Math.abs(mCurNum)) % 10;
+        canvas.drawText(drawNumber + "", mTextCenterX, y + mTextHeight / 2, mPaint);
+
+        Log.d("ScrollNumber", "drawSelf : [ " + mCurNum + " -> " + drawNumber + " ], y =" + (y + mTextHeight / 2));
     }
 
-
-    public void setTargetNumber(int nextNum) {
-        this.mTargetNum = nextNum;
-        invalidate();
-    }
 
     private int dp2px(float dpVal) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
@@ -228,16 +271,29 @@ public class ScrollNumber extends View {
                 dpVal, getResources().getDisplayMetrics());
     }
 
-    public int getTargetNumber(){
+    public int getTargetNumber() {
         return this.mTargetNum;
     }
 
-    public void increase(int num){
-
+    public void increase(int num) {
+        mTargetNum = mTargetNum + num;
+        direction = 1;
+        mOffset = 0;
+        mDeltaNum = Math.abs(mTargetNum - mCurNum);
+        invalidate();
     }
 
 
-    public void decrease(int num){
-
+    public void decrease(int num) {
+        mTargetNum = mTargetNum - num;
+        direction = -1;
+        mOffset = 0;
+        mDeltaNum = Math.abs(mTargetNum - mCurNum);
+        invalidate();
     }
+
+    public void setOnOdomenterInteractionListener(OnOdomenterInteraction listener) {
+        mOnOdomenterInteraction = listener;
+    }
+
 }

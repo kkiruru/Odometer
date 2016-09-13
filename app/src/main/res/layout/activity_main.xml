@@ -47,13 +47,12 @@
             android:layout_height="wrap_content"
             android:onClick="onIncrese"
             android:text="13" />
-
         <Button
-            android:id="@+id/incease_137"
+            android:id="@+id/incease_67"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="onIncrese"
-            android:text="137" />
+            android:text="63" />
     </LinearLayout>
 
 
@@ -89,14 +88,19 @@
             android:text="13" />
 
         <Button
-            android:id="@+id/decease_137"
+            android:id="@+id/decease_67"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="onDecrese"
-            android:text="137" />
+            android:text="67" />
 
     </LinearLayout>
 
-
+    <Button
+        android:id="@+id/initialize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onInitialize"
+        android:text="초기화" />
 
 </LinearLayout>
