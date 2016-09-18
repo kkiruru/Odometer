@@ -28,8 +28,10 @@ public class PositionalNumber {
 	}
 
 	public void setPositionValue(int position, int value){
-		value = getValue() + position == 0 ? value : 10^position * value;
-		setValue(value);
+		while( mNumbers.size() -1 <= position ){
+			mNumbers.add(0);
+		}
+		mNumbers.set(position, value);
 	}
 
 
