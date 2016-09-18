@@ -92,19 +92,27 @@ public class Odometer extends LinearLayout {
 
 		@Override
 		public void onRoundDown(int position, int borrow) {
-			Log.e("Odometer", "onRoundDown");
+			Log.e("Odometer", "onRoundDown [" + position + "]_" + borrow);
+			if (position < mMeterNumbers.size() - 1) {
+				mMeterNumbers.get(position + 1).decrease(borrow);
+			}
 		}
 
 		@Override
-		public void onComplete(int position, int value ) {
-			Log.e("Odometer", "onComplete : ["+position+"]" + "_" + value);
+		public void onComplete(int position, int value) {
+			Log.e("Odometer", "onComplete : [" + position + "]" + "_" + value);
 			mCurrentValue.setPositionValue(position, value);
-				if (mCurrentValue.getValue() == mTargetNumber.getValue()) {
-				Log.e("Odometer", "all completed ~~~" + mCurrentValue.getValue() );
+			if (mCurrentValue.getValue() == mTargetNumber.getValue()) {
+				Log.e("Odometer", "all completed ~~~ " + mCurrentValue.getValue());
+			}
+
+			if ( 1 <= position && position == mMeterNumbers.size() - 1 && value == 0 ){
+				MeterNumber meterNumber = mMeterNumbers.get(position);
+				removeView(meterNumber);
+				mMeterNumbers.remove(meterNumber);
 			}
 		}
 	};
-
 
 
 	private void resetView() {
@@ -115,28 +123,38 @@ public class Odometer extends LinearLayout {
 
 
 	public void adjust(int value) {
+		Log.d("adjust", mTargetNumber.getValue() + " > " + (mTargetNumber.getValue() + value));
 
-		Log.d("adjust", mTargetNumber.getValue() + " > " + ( mTargetNumber.getValue() + value));
-
-		mTargetNumber.setValue(mTargetNumber.getValue() + value);
-
-		PositionalNumber adjustValue = new PositionalNumber(value);
+		PositionalNumber adjustValue;
 
 		if (0 < value) {
+			mTargetNumber.setValue(mTargetNumber.getValue() + value);
+			adjustValue = new PositionalNumber(value);
 			int increment = 0;
-			for (int i = adjustValue.size() - 1; 0 <= i ; i--) {
-				increment = increment*10 + adjustValue.getPositionValue(i);
-				if (i <= mMeterNumbers.size() - 1 ) {
+			for (int i = adjustValue.size() - 1; 0 <= i; i--) {
+				increment = increment * 10 + adjustValue.getPositionValue(i);
+				if (i <= mMeterNumbers.size() - 1) {
 					mMeterNumbers.get(i).increase(increment);
 					increment = 0;
 				}
 			}
 		} else {
-			for (int i = 0; i <= mTargetNumber.size() - 1; i++) {
-				if (mMeterNumbers.get(i) != null) {
-					mMeterNumbers.get(i).decrease(adjustValue.getPositionValue(i));
+			if (mTargetNumber.getValue() < Math.abs(value)) {
+				value = -mTargetNumber.getValue();
+			}
+			mTargetNumber.setValue(mTargetNumber.getValue() + value);
+			adjustValue = new PositionalNumber(Math.abs(value));
+
+			int increment = 0;
+
+			for (int i = adjustValue.size() - 1; 0 <= i; i--) {
+				increment = increment * 10 + adjustValue.getPositionValue(i);
+				if (i <= mMeterNumbers.size() - 1) {
+					mMeterNumbers.get(i).decrease(increment);
+					increment = 0;
 				}
 			}
+
 		}
 	}
 

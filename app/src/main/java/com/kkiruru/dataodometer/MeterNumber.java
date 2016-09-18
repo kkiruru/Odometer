@@ -203,15 +203,14 @@ public class MeterNumber extends View {
 				mNextNum = mCurrNum + increment;
 				mTargetNum = mTargetNum % 10;
 				mDeltaNum = Math.abs(mTargetNum - mCurrNum);
-			} else if (direction == -1 && mCurrNum < 0 ) {
+			} else if (direction == -1 && ( mCurrNum < 0 || mCurrNum % 10 == 9 )) {
 				mOdomenterInteraction.onRoundDown(position, (Math.abs(mTargetNum) + 9 ) / 10);
-
-				mCurrNum = mCurrNum + 10;
-				mNextNum = mCurrNum + increment;
-				mTargetNum = mTargetNum + 10;
-
-				mTargetNum = mTargetNum + ( Math.abs(mTargetNum) + 9 ) / 10;
-				mDeltaNum = Math.abs(mTargetNum - mCurrNum);
+				if ( mCurrNum < 0  ){
+					mCurrNum = mCurrNum + 10;
+					mNextNum = mCurrNum + increment;
+					mTargetNum = mTargetNum + ( Math.abs(mTargetNum) + 9 ) / 10;
+					mDeltaNum = Math.abs(mTargetNum - mCurrNum);
+				}
 			}
 		}
 	}
@@ -261,7 +260,14 @@ public class MeterNumber extends View {
 		if (num <= 0) {
 			return;
 		}
+
 		mTargetNum -= num;
+
+		if ( mTargetNum < 0 ){
+			mTargetNum = mTargetNum + ( num + 9 ) / 10 * 10;
+			mCurrNum = mCurrNum + ( num + 9 ) / 10 * 10;
+		}
+
 		direction = -1;
 		mOffset = 0;
 		mDeltaNum = Math.abs(mTargetNum - mCurrNum);
