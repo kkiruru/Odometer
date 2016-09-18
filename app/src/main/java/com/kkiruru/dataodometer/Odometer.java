@@ -16,190 +16,129 @@ import java.util.List;
  * Created by 1100416 on 16. 9. 12..
  */
 public class Odometer extends LinearLayout {
-    private Context mContext;
-    private List<Integer> mTargetNumbers = new ArrayList<>();
-    private List<Integer> mPrimaryNumbers = new ArrayList<>();
-    //    private List<ScrollNumber> mScrollNumbers = new ArrayList<>();
-    private int mTextSize = 90;
-    private int[] mTextColors = new int[]{R.color.accent};
+	private Context mContext;
 
-    private ScrollNumber mScrollNumber;
+	private PositionalNumber mCurrentValue = new PositionalNumber();
+	private PositionalNumber mTargetNumber = new PositionalNumber();
+	private List<MeterNumber> mMeterNumbers = new ArrayList<>();
 
+	private int mTextSize = 90;
+	private int[] mTextColors = new int[]{R.color.accent};
+	private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
 
-    private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
-    private String mFontFileName;
+	public Odometer(Context context) {
+		this(context, null);
+	}
 
-    public Odometer(Context context) {
-        this(context, null);
-    }
+	public Odometer(Context context, AttributeSet attrs) {
+		this(context, attrs, 0);
+	}
 
-    public Odometer(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
+	public Odometer(Context context, AttributeSet attrs, int defStyleAttr) {
+		super(context, attrs, defStyleAttr);
+		mContext = context;
+		setOrientation(HORIZONTAL);
+		setGravity(Gravity.CENTER);
 
-    public Odometer(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        mContext = context;
-
-//        setNumber(0, 0);
-//        setTextSize(mTextSize);
-
-        setOrientation(HORIZONTAL);
-        setGravity(Gravity.CENTER);
-    }
-
-    public void setNumber(int val) {
-        resetView();
-
-        int number = val;
-        do {
-            int i = number % 10;
-            mTargetNumbers.add(i);
-            number /= 10;
-        } while (number > 0);
-
-//        for (int i = mTargetNumbers.size() - 1; i >= 0; i--) {
-//            ScrollNumber scrollNumber = new ScrollNumber(mContext);
-//            scrollNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
-//            scrollNumber.setTextSize(mTextSize);
-//            scrollNumber.setInterpolator(mInterpolator);
-//            if (!TextUtils.isEmpty(mFontFileName))
-//                scrollNumber.setTextFont(mFontFileName);
-//            scrollNumber.setNumber(0, mTargetNumbers.get(i), i * 10);
-//
-//            scrollNumber.setOnOdomenterInteractionListener( new ScrollNumber.OnOdomenterInteraction (){
-//                @Override
-//                public void onCarry() {
-//
-//                }
-//
-//                @Override
-//                public void onRoundDown() {
-//
-//                }
-//            });
-//
-//            mScrollNumbers.add(scrollNumber);
-
-        if ( mScrollNumber == null ){
-            mScrollNumber = new ScrollNumber(mContext);
-        }
-
-        mScrollNumber.setTextSize(mTextSize);
-        mScrollNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
-        mScrollNumber.setInterpolator(mInterpolator);
-        mScrollNumber.setNumber(val);
-        mScrollNumber.setOdomenterInteractionListener( new ScrollNumber.OdomenterInteraction(){
-            @Override
-            public void onCarry() {
-                Log.e("Odometer", "onCarry");
-            }
-
-            @Override
-            public void onRoundDown() {
-                Log.e("Odometer", "onRoundDown");
-            }
-
-            @Override
-            public void onComplete() {
-                Log.e("Odometer", "onComplete");
-            }
-        });
-
-        addView(mScrollNumber);
-    }
+		setNumber(0);
+	}
 
 
-
-    private void resetView() {
-        mTargetNumbers.clear();
-//        mScrollNumbers.clear();
-        removeAllViews();
-    }
-
-
-    public void setNumber(int from, int to) {
-//        if (to < from)
-//            throw new UnsupportedOperationException("'to' value must > 'from' value");
-//
-//        resetView();
-//        // operate to
-//        int number = to, count = 0;
-//        while (number > 0) {
-//            int i = number % 10;
-//            mTargetNumbers.add(i);
-//            number /= 10;
-//            count++;
-//        }
-//        // operate from
-//        number = from;
-//        while (count > 0) {
-//            int i = number % 10;
-//            mPrimaryNumbers.add(i);
-//            number /= 10;
-//            count--;
-//        }
-//
-//        for (int i = mTargetNumbers.size() - 1; i >= 0; i--) {
-//            ScrollNumber scrollNumber = new ScrollNumber(mContext);
-//            scrollNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
-//            scrollNumber.setTextSize(mTextSize);
-//            if (!TextUtils.isEmpty(mFontFileName))
-//                scrollNumber.setTextFont(mFontFileName);
-//            scrollNumber.setNumber(mPrimaryNumbers.get(i), mTargetNumbers.get(i), i * 10);
-//            mScrollNumbers.add(scrollNumber);
-//            addView(scrollNumber);
-//        }
-        setNumber(to);
-    }
-
-//    public void setTextColors(@ColorRes int[] textColors) {
-//        mTextColors = textColors;
-//        for (int i = mScrollNumbers.size() - 1; i >= 0; i--) {
-//            ScrollNumber scrollNumber = mScrollNumbers.get(i);
-//            scrollNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
-//        }
-//    }
+	private MeterNumber createMeterNumber(int position, int value) {
+		MeterNumber meterNumber = new MeterNumber(mContext);
+		meterNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
+		meterNumber.setTextSize(mTextSize);
+		meterNumber.setInterpolator(mInterpolator);
+		meterNumber.setPositionalNumber(position);
+		meterNumber.setNumber(value);
+		return meterNumber;
+	}
 
 
-    public void setTextSize(int textSize) {
-//        if (textSize <= 0) throw new IllegalArgumentException("text size must > 0!");
-//        mTextSize = textSize;
-//        for (ScrollNumber s : mScrollNumbers) {
-//            s.setTextSize(textSize);
-//        }
-        mScrollNumber.setTextSize(textSize);
-    }
+	public void setNumber(int val) {
+		resetView();
 
-//    public void setInterpolator(Interpolator interpolator) {
-//        if (interpolator == null)
-//            throw new IllegalArgumentException("interpolator couldn't be null");
-//        mInterpolator = interpolator;
-//        for (ScrollNumber s : mScrollNumbers) {
-//            s.setInterpolator(interpolator);
-//        }
-//    }
+		int number = val;
 
-//    public void setTextFont(String fileName) {
-//        if (TextUtils.isEmpty(fileName)) throw new IllegalArgumentException("file name is null");
-//        mFontFileName = fileName;
-//        for (ScrollNumber s : mScrollNumbers) {
-//            s.setTextFont(fileName);
-//        }
-//    }
+		mTargetNumber.setValue(val);
+
+		for (int i = 0; i < mTargetNumber.size(); i++) {
+			MeterNumber meterNumber = createMeterNumber(i, mTargetNumber.getPositionValue(i));
+			meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
+
+			mMeterNumbers.add(meterNumber);
+		}
+
+		for (MeterNumber meterNumber : mMeterNumbers) {
+			addView(meterNumber, 0);
+		}
+	}
 
 
-    public void adjust(int value) {
-        if (0 < value) {
-            if ( mScrollNumber != null ){
-                mScrollNumber.increase(value);
-            }
-        } else {
-            if ( mScrollNumber != null ){
-                mScrollNumber.decrease(-value);
-            }
-        }
-    }
+	private MeterNumber.OdomenterInteraction OdomenterInteraction = new MeterNumber.OdomenterInteraction() {
+		@Override
+		public void onCarry(int position, int carry) {
+			Log.e("Odometer", "onCarry [" + position + "]_" + carry);
+			int newValue = mTargetNumber.getValue() + position == 0 ? carry : 10^position * carry;;
+			mTargetNumber.setValue(newValue);
+
+			if (mMeterNumbers.size() <= position + 1) {
+				MeterNumber meterNumber = createMeterNumber(position + 1, 0);
+				meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
+				mMeterNumbers.add(meterNumber);
+				addView(meterNumber, 0);
+				meterNumber.increase(carry);
+			} else {
+				mMeterNumbers.get(position + 1).increase(carry);
+			}
+		}
+
+		@Override
+		public void onRoundDown(int position, int borrow) {
+			Log.e("Odometer", "onRoundDown");
+		}
+
+		@Override
+		public void onComplete(int position, int value ) {
+			Log.e("Odometer", "onComplete : ["+position+"]" + "_" + value);
+			mCurrentValue.setPositionValue(position, position);
+			if (mCurrentValue.getValue() == mTargetNumber.getValue()) {
+				Log.e("Odometer", "all completed ~~~");
+			}
+		}
+	};
+
+
+
+	private void resetView() {
+		mTargetNumber.clear();
+		mMeterNumbers.clear();
+		removeAllViews();
+	}
+
+
+	public void adjust(int value) {
+		PositionalNumber adjustValue = new PositionalNumber(value);
+
+		if (0 < value) {
+			int increment = 0;
+			for (int i = adjustValue.size() - 1; 0 <= i ; i--) {
+				increment = increment*10 + adjustValue.getPositionValue(i);
+				if (i <= mMeterNumbers.size() - 1 ) {
+					mMeterNumbers.get(i).increase(increment);
+					increment = 0;
+				}
+			}
+			mTargetNumber.setValue(mTargetNumber.getValue() + value);
+		} else {
+			for (int i = 0; i <= mTargetNumber.size() - 1; i++) {
+				if (mMeterNumbers.get(i) != null) {
+					mMeterNumbers.get(i).decrease(adjustValue.getPositionValue(i));
+				}
+			}
+			mTargetNumber.setValue(mTargetNumber.getValue() - value);
+		}
+	}
 
 }
 

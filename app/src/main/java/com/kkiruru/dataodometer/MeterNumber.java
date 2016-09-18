@@ -5,8 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -15,11 +15,11 @@ import android.view.animation.Interpolator;
 /**
  * Created by wuhaojie on 2016/7/15 11:36.
  */
-public class ScrollNumber extends View {
+public class MeterNumber extends View {
 	private Context mContext;
-
+	private int position = 0;
 	private int mDeltaNum = 0;
-	private int mCurNum = 0;
+	private int mCurrNum = 0;
 	private int mNextNum = 0;
 	private int mTargetNum = 0;
 
@@ -29,33 +29,34 @@ public class ScrollNumber extends View {
 	private Paint mPaint;
 	private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
 
+	private static final int MARGIN = 2;
 	private int mTextCenterX;
 	private int mTextHeight;
 	private Rect mTextBounds = new Rect();
-	private int mTextSize = dp2px(90);
-	private int mTextColor = 0xf6337b;
+	private int mTextSize = dp2px(15);
+	private int mTextColor = 0x000000;
 	private Typeface mTypeface;
 
 	private OdomenterInteraction mOdomenterInteraction;
 
 	interface OdomenterInteraction {
-		void onCarry();
+		void onCarry(int position, int carry);
 
-		void onRoundDown();
+		void onRoundDown(int position, int borrow);
 
-		void onComplete();
+		void onComplete(int position, int value);
 	}
 
 
-	public ScrollNumber(Context context) {
+	public MeterNumber(Context context) {
 		this(context, null);
 	}
 
-	public ScrollNumber(Context context, AttributeSet attrs) {
+	public MeterNumber(Context context, AttributeSet attrs) {
 		this(context, attrs, 0);
 	}
 
-	public ScrollNumber(Context context, AttributeSet attrs, int defStyleAttr) {
+	public MeterNumber(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
 
 		mContext = context;
@@ -71,7 +72,15 @@ public class ScrollNumber extends View {
 	}
 
 	public void setNumber(final int curr) {
-		setFromNumber(curr);
+		mCurrNum = Math.abs(curr) % 10;
+		mTargetNum = mCurrNum;
+		mDeltaNum = 0;
+		mOffset = 0;
+		invalidate();
+	}
+
+	public void setPositionalNumber(final int position) {
+		this.position = position;
 	}
 
 
@@ -84,10 +93,8 @@ public class ScrollNumber extends View {
 	}
 
 
-	public void setTextFont(String fileName) {
-		if (TextUtils.isEmpty(fileName))
-			throw new IllegalArgumentException("please check file name end with '.ttf' or '.otf'");
-		mTypeface = Typeface.createFromAsset(mContext.getAssets(), fileName);
+	public void setTypeface(Typeface typeface) {
+		mTypeface = typeface;
 		if (mTypeface == null) throw new RuntimeException("please check your font!");
 		mPaint.setTypeface(mTypeface);
 		requestLayout();
@@ -105,7 +112,7 @@ public class ScrollNumber extends View {
 	}
 
 	private void measureTextHeight() {
-		mPaint.getTextBounds(mCurNum + "", 0, 1, mTextBounds);
+		mPaint.getTextBounds(mCurrNum + "", 0, 1, mTextBounds);
 		mTextHeight = mTextBounds.height();
 	}
 
@@ -133,9 +140,7 @@ public class ScrollNumber extends View {
 				break;
 		}
 		result = mode == MeasureSpec.AT_MOST ? Math.min(result, val) : result;
-
-//        return result + getPaddingTop() + getPaddingBottom()+dp2px(40);
-		return result + dp2px(2);
+		return result + dp2px(MARGIN);
 	}
 
 	private int measureWidth(int measureSpec) {
@@ -153,24 +158,23 @@ public class ScrollNumber extends View {
 				break;
 		}
 		result = mode == MeasureSpec.AT_MOST ? Math.min(result, val) : result;
-//        return result + getPaddingLeft() + getPaddingRight() + 15;
-		return result + dp2px(2);
+		return result + dp2px(MARGIN);
 	}
 
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-		if (mCurNum != mTargetNum) {
+		if (mCurrNum != mTargetNum) {
 			if (1 <= Math.abs(mOffset)) {
 				mOffset = 0;
-				calNum(mCurNum + direction);
+				calNum(direction);
 			}
 			postDelayed(mScrollRunnable, 0);
 		} else {
-			rearrange();
+			mDeltaNum = 0;
 			mOffset = 0;
 			if (mOdomenterInteraction != null) {
-				mOdomenterInteraction.onComplete();
+				mOdomenterInteraction.onComplete(position, mCurrNum);
 			}
 		}
 
@@ -185,43 +189,37 @@ public class ScrollNumber extends View {
 	}
 
 
-	private void rearrange() {
-		mCurNum = Math.abs(mCurNum) % 10;
-		mTargetNum = mCurNum;
-		mDeltaNum = Math.abs(mTargetNum - mCurNum);
-	}
+	private void calNum(int increment) {
+		mCurrNum += increment;
+		mNextNum = mCurrNum + increment;
 
+		Log.d("calNum", "[" + position +"], mCurrNum : " + mCurrNum + ", mTargetNum : " + mTargetNum);
 
-	private void setFromNumber(int number) {
-		mCurNum = Math.abs(number) % 10;
-		mOffset = 0;
-		invalidate();
-	}
-
-
-	private void setTargetNumber(int nextNum) {
-		this.mTargetNum = nextNum;
-		invalidate();
-	}
-
-
-	private void calNum(int number) {
-		mCurNum = number;
-		mNextNum = number + direction;
 		if (mOdomenterInteraction != null) {
-			if (mCurNum % 10 == 0 && direction == 1) {
-				mOdomenterInteraction.onCarry();
-			} else if (direction == -1 && (mCurNum == -1 || mCurNum % 10 == 9)) {
-				mOdomenterInteraction.onRoundDown();
+			if( direction == 1 && 10 <= mCurrNum ){
+				mOdomenterInteraction.onCarry(position, mTargetNum/10);
+
+				mCurrNum = mCurrNum % 10;
+				mNextNum = mCurrNum + increment;
+				mTargetNum = mTargetNum % 10;
+				mDeltaNum = Math.abs(mTargetNum - mCurrNum);
+			} else if (direction == -1 && mCurrNum < 0 ) {
+				mOdomenterInteraction.onRoundDown(position, (Math.abs(mTargetNum) + 9 ) / 10);
+
+				mCurrNum = mCurrNum + 10;
+				mNextNum = mCurrNum + increment;
+				mTargetNum = mTargetNum + 10;
+
+				mTargetNum = mTargetNum + ( Math.abs(mTargetNum) + 9 ) / 10;
+				mDeltaNum = Math.abs(mTargetNum - mCurrNum);
 			}
 		}
 	}
 
-
 	private Runnable mScrollRunnable = new Runnable() {
 		@Override
 		public void run() {
-			float x = (float) (1 - 1.0 * (mTargetNum - mCurNum) / mDeltaNum);
+			float x = (float) (1 - 1.0 * (mTargetNum - mCurrNum) / mDeltaNum);
 			mOffset = mOffset - (float) (0.3f * (1 - mInterpolator.getInterpolation(x) + 0.1) * direction);
 			invalidate();
 		}
@@ -237,7 +235,7 @@ public class ScrollNumber extends View {
 
 	private void drawSelf(Canvas canvas) {
 		int y = getMeasuredHeight() / 2;
-		int drawNumber = (Math.abs(mCurNum)) % 10;
+		int drawNumber = (Math.abs(mCurrNum)) % 10;
 		canvas.drawText(drawNumber + "", mTextCenterX, y + mTextHeight / 2, mPaint);
 	}
 
@@ -249,42 +247,35 @@ public class ScrollNumber extends View {
 	}
 
 
-	private int dp2px(float dpVal) {
-		return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
-				dpVal, getResources().getDisplayMetrics());
-	}
-
-//	public int getTargetNumber() {
-//		return this.mTargetNum;
-//	}
-
 	public void increase(int num) {
+		Log.d("increase", "[" + position +"], target " + mTargetNum + " > " + (mTargetNum + num));
 		mTargetNum = mTargetNum + num;
 		direction = 1;
 		mOffset = 0;
-		mDeltaNum = Math.abs(mTargetNum - mCurNum);
+		mDeltaNum = Math.abs(mTargetNum - mCurrNum);
 		invalidate();
 	}
 
 	public void decrease(int num) {
-		if ( num <= 0 ){
+		Log.d("decrease", "[" + position +"], target " + mTargetNum + " > " + (mTargetNum - num));
+		if (num <= 0) {
 			return;
 		}
-
-		if ( mTargetNum - num < 0 ){
-			mCurNum += (( num + 9 ) / 10 ) * 10;
-			mTargetNum = mCurNum;
-		}
-
 		mTargetNum -= num;
 		direction = -1;
 		mOffset = 0;
-		mDeltaNum = Math.abs(mTargetNum - mCurNum);
+		mDeltaNum = Math.abs(mTargetNum - mCurrNum);
 		invalidate();
 	}
 
 	public void setOdomenterInteractionListener(OdomenterInteraction listener) {
 		mOdomenterInteraction = listener;
 	}
+
+	private int dp2px(float dpVal) {
+		return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+				dpVal, getResources().getDisplayMetrics());
+	}
+
 
 }

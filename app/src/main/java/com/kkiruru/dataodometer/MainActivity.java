@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity {
 
         mOdometer = (Odometer)findViewById(R.id.odometer);
 
-        mOdometer.setNumber(0);
+//        mOdometer.setNumber(365);
     }
 
 
