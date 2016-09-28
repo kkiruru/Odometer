@@ -28,31 +28,27 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/incease_1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onIncrese"
+            android:onClick="onIncrease"
             android:text="1" />
 
         <Button
-            android:id="@+id/incease_7"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onIncrese"
-            android:text="7" />
+            android:onClick="onIncrease"
+            android:text="10" />
 
         <Button
-            android:id="@+id/incease_13"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onIncrese"
-            android:text="13" />
+            android:onClick="onIncrease"
+            android:text="100" />
         <Button
-            android:id="@+id/incease_67"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onIncrese"
-            android:text="67" />
+            android:onClick="onIncrease"
+            android:text="250" />
     </LinearLayout>
 
 
@@ -62,41 +58,69 @@
         android:text="감소" />
 
     <LinearLayout
+        android:layout_marginTop="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/decease_1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onDecrese"
+            android:onClick="onDecrease"
             android:text="1" />
 
         <Button
-            android:id="@+id/decease_7"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onDecrese"
-            android:text="7" />
+            android:onClick="onDecrease"
+            android:text="10" />
 
         <Button
-            android:id="@+id/decease_13"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onDecrese"
-            android:text="13" />
+            android:onClick="onDecrease"
+            android:text="100" />
 
         <Button
-            android:id="@+id/decease_67"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="onDecrese"
-            android:text="67" />
+            android:onClick="onDecrease"
+            android:text="250" />
 
     </LinearLayout>
 
+
+    <LinearLayout
+        android:layout_marginTop="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <EditText
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:ems="10"
+            android:id="@+id/value" />
+
+        <Button
+            android:id="@+id/increase"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onIncreaseValue"
+            android:text="증가" />
+
+        <Button
+            android:id="@+id/decrease"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onDecreaseValue"
+            android:text="감소" />
+
+
+    </LinearLayout>
     <Button
+        android:layout_marginTop="20dp"
         android:id="@+id/initialize"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

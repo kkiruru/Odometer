@@ -16,147 +16,179 @@ import java.util.List;
  * Created by 1100416 on 16. 9. 12..
  */
 public class Odometer extends LinearLayout {
-	private Context mContext;
+    private Context mContext;
 
-	private PositionalNumber mCurrentValue = new PositionalNumber();
-	private PositionalNumber mTargetNumber = new PositionalNumber();
-	private List<MeterNumber> mMeterNumbers = new ArrayList<>();
+    private int mCurrent = 0;
+    private int mTarget = 0;
 
-	private int mTextSize = 90;
-	private int[] mTextColors = new int[]{R.color.accent};
-	private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
+    private PositionalNumber mCurrentValue = new PositionalNumber();
+    private PositionalNumber mTargetNumber = new PositionalNumber();
+    private List<MeterNumber> mMeterNumbers = new ArrayList<>();
 
-	public Odometer(Context context) {
-		this(context, null);
-	}
+    private int mTextSize = 90;
+    private int[] mTextColors = new int[]{R.color.accent};
+    private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
 
-	public Odometer(Context context, AttributeSet attrs) {
-		this(context, attrs, 0);
-	}
+    public Odometer(Context context) {
+        this(context, null);
+    }
 
-	public Odometer(Context context, AttributeSet attrs, int defStyleAttr) {
-		super(context, attrs, defStyleAttr);
-		mContext = context;
-		setOrientation(HORIZONTAL);
-		setGravity(Gravity.CENTER);
+    public Odometer(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
 
-		setNumber(0);
-	}
+    public Odometer(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        mContext = context;
+        setOrientation(HORIZONTAL);
+        setGravity(Gravity.CENTER);
 
+        setNumber(0);
+    }
 
-	private MeterNumber createMeterNumber(int position, int value) {
-		MeterNumber meterNumber = new MeterNumber(mContext);
-		meterNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
-		meterNumber.setTextSize(mTextSize);
-		meterNumber.setInterpolator(mInterpolator);
-		meterNumber.setPositionalNumber(position);
-		meterNumber.setNumber(value);
-		return meterNumber;
-	}
+    private UnitMode mUnitMode = UnitMode.MB;
 
+    enum UnitMode {
+        MB,
+        GB
+    }
 
-	public void setNumber(int val) {
-		resetView();
-
-		int number = val;
-
-		mTargetNumber.setValue(val);
-
-		for (int i = 0; i < mTargetNumber.size(); i++) {
-			MeterNumber meterNumber = createMeterNumber(i, mTargetNumber.getPositionValue(i));
-			meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
-
-			mMeterNumbers.add(meterNumber);
-		}
-
-		for (MeterNumber meterNumber : mMeterNumbers) {
-			addView(meterNumber, 0);
-		}
-	}
+    private MeterNumber createMeterNumber(int position, int value) {
+        MeterNumber meterNumber = new MeterNumber(mContext);
+        meterNumber.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
+        meterNumber.setTextSize(mTextSize);
+        meterNumber.setInterpolator(mInterpolator);
+        meterNumber.setPositionalNumber(position);
+        meterNumber.setNumber(value);
+        return meterNumber;
+    }
 
 
-	private MeterNumber.OdomenterInteraction OdomenterInteraction = new MeterNumber.OdomenterInteraction() {
-		@Override
-		public void onCarry(int position, int carry) {
-			Log.e("Odometer", "onCarry [" + position + "]_" + carry);
-			if (mMeterNumbers.size() <= position + 1) {
-				MeterNumber meterNumber = createMeterNumber(position + 1, 0);
-				meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
-				mMeterNumbers.add(meterNumber);
-				addView(meterNumber, 0);
-				meterNumber.increase(carry);
-			} else {
-				mMeterNumbers.get(position + 1).increase(carry);
-			}
-		}
+    public void setNumber(int val) {
+        resetView();
 
-		@Override
-		public void onRoundDown(int position, int borrow) {
-			Log.e("Odometer", "onRoundDown [" + position + "]_" + borrow);
-			if (position < mMeterNumbers.size() - 1) {
-				mMeterNumbers.get(position + 1).decrease(borrow);
-			}
-		}
+        mTarget = mCurrent = val;
 
-		@Override
-		public void onComplete(int position, int value) {
-			Log.e("Odometer", "onComplete : [" + position + "]" + "_" + value);
-			mCurrentValue.setPositionValue(position, value);
-			if (mCurrentValue.getValue() == mTargetNumber.getValue()) {
-				Log.e("Odometer", "all completed ~~~ " + mCurrentValue.getValue());
-			}
+        if (1000 < mCurrent) {
+            mUnitMode = UnitMode.GB;
+        }
 
-			if ( 1 <= position && position == mMeterNumbers.size() - 1 && value == 0 ){
-				MeterNumber meterNumber = mMeterNumbers.get(position);
-				removeView(meterNumber);
-				mMeterNumbers.remove(meterNumber);
-			}
-		}
-	};
+        mTargetNumber.setValue(val);
+
+        for (int i = 0; i < mTargetNumber.size(); i++) {
+            MeterNumber meterNumber = createMeterNumber(i, mTargetNumber.getPositionValue(i));
+            meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
+
+            mMeterNumbers.add(meterNumber);
+        }
+
+        for (MeterNumber meterNumber : mMeterNumbers) {
+            addView(meterNumber, 0);
+        }
+    }
 
 
-	private void resetView() {
-		mTargetNumber.clear();
-		mMeterNumbers.clear();
-		removeAllViews();
-	}
+    private MeterNumber.OdomenterInteraction OdomenterInteraction = new MeterNumber.OdomenterInteraction() {
+        @Override
+        public void onCarry(int position, int carry) {
+            Log.e("Odometer", "onCarry [" + position + "]_" + carry);
+            //현재 최상위 자리에서 carry가 발생했다면, 새로운 MeterNumber를 추가한다
+            if (mMeterNumbers.size() <= position + 1) {
+
+                MeterNumber meterNumber = createMeterNumber(position + 1, 0);
+                meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
+                mMeterNumbers.add(meterNumber);
+                addView(meterNumber, 0);
+                meterNumber.increase(carry);
+            } else { //자리 올림을 한다
+                mMeterNumbers.get(position + 1).increase(carry);
+            }
 
 
-	public void adjust(int value) {
-		Log.d("adjust", mTargetNumber.getValue() + " > " + (mTargetNumber.getValue() + value));
+        }
 
-		PositionalNumber adjustValue;
+        @Override
+        public void onRoundDown(int position, int borrow) {
+            Log.e("Odometer", "onRoundDown [" + position + "]_" + borrow);
+            if (position < mMeterNumbers.size() - 1) {
+                mMeterNumbers.get(position + 1).decrease(borrow);
+            }
+        }
 
-		if (0 < value) {
-			mTargetNumber.setValue(mTargetNumber.getValue() + value);
-			adjustValue = new PositionalNumber(value);
-			int increment = 0;
-			for (int i = adjustValue.size() - 1; 0 <= i; i--) {
-				increment = increment * 10 + adjustValue.getPositionValue(i);
-				if (i <= mMeterNumbers.size() - 1) {
-					mMeterNumbers.get(i).increase(increment);
-					increment = 0;
-				}
-			}
-		} else {
-			if (mTargetNumber.getValue() < Math.abs(value)) {
-				value = -mTargetNumber.getValue();
-			}
-			mTargetNumber.setValue(mTargetNumber.getValue() + value);
-			adjustValue = new PositionalNumber(Math.abs(value));
+        @Override
+        public void onComplete(int position, int value) {
+            Log.e("Odometer", "onComplete : [" + position + "]" + "_" + value);
+            mCurrentValue.setPositionValue(position, value);
+            if (mCurrentValue.getValue() == mTargetNumber.getValue()) {
+                Log.e("Odometer", "all completed ~~~ " + mCurrentValue.getValue());
+            }
 
-			int increment = 0;
+//			if ( 1 <= position && position == mMeterNumbers.size() - 1 && value == 0 ){
+//				MeterNumber meterNumber = mMeterNumbers.get(position);
+//				removeView(meterNumber);
+//				mMeterNumbers.remove(meterNumber);
+//			}
+            removeZero(mMeterNumbers);
+        }
+    };
 
-			for (int i = adjustValue.size() - 1; 0 <= i; i--) {
-				increment = increment * 10 + adjustValue.getPositionValue(i);
-				if (i <= mMeterNumbers.size() - 1) {
-					mMeterNumbers.get(i).decrease(increment);
-					increment = 0;
-				}
-			}
 
-		}
-	}
+    private void removeZero(List<MeterNumber> numbers) {
+        if (numbers.size() <= 1) {
+            return;
+        }
+
+        MeterNumber meterNumber = numbers.get(numbers.size() - 1);
+        if (meterNumber.getCurrentValue() == meterNumber.getTargetValue() && meterNumber.getCurrentValue() == 0) {
+            removeView(meterNumber);
+            numbers.remove(meterNumber);
+            removeZero(numbers);
+        }
+    }
+
+
+    private void resetView() {
+        mTargetNumber.clear();
+        mMeterNumbers.clear();
+        removeAllViews();
+    }
+
+
+    public void adjust(int value) {
+        Log.d("adjust", mTargetNumber.getValue() + " -> " + (mTargetNumber.getValue() + value));
+
+        PositionalNumber adjustValue;
+
+        if (0 < value) {
+            mTargetNumber.setValue(mTargetNumber.getValue() + value);
+            adjustValue = new PositionalNumber(value);
+            int increment = 0;
+            for (int i = adjustValue.size() - 1; 0 <= i; i--) {
+                increment = increment * 10 + adjustValue.getPositionValue(i);
+                if (i <= mMeterNumbers.size() - 1) {
+                    mMeterNumbers.get(i).increase(increment);
+                    increment = 0;
+                }
+            }
+        } else {
+            if (mTargetNumber.getValue() < Math.abs(value)) {
+                value = -mTargetNumber.getValue();
+            }
+            mTargetNumber.setValue(mTargetNumber.getValue() + value);
+            adjustValue = new PositionalNumber(Math.abs(value));
+
+            int increment = 0;
+
+            for (int i = adjustValue.size() - 1; 0 <= i; i--) {
+                increment = increment * 10 + adjustValue.getPositionValue(i);
+                if (i <= mMeterNumbers.size() - 1) {
+                    mMeterNumbers.get(i).decrease(increment);
+                    increment = 0;
+                }
+            }
+
+        }
+    }
 
 }
 

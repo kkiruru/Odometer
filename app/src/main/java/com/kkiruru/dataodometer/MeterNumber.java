@@ -191,7 +191,7 @@ public class MeterNumber extends View {
 
 	private void calNum(int increment) {
 		mCurrNum += increment;
-		mNextNum = mCurrNum + increment;
+//		mNextNum = mCurrNum + increment;
 
 		Log.d("calNum", "[" + position +"], mCurrNum : " + mCurrNum + ", mTargetNum : " + mTargetNum);
 
@@ -200,19 +200,20 @@ public class MeterNumber extends View {
 				mOdomenterInteraction.onCarry(position, mTargetNum/10);
 
 				mCurrNum = mCurrNum % 10;
-				mNextNum = mCurrNum + increment;
+//				mNextNum = mCurrNum + increment;
 				mTargetNum = mTargetNum % 10;
 				mDeltaNum = Math.abs(mTargetNum - mCurrNum);
 			} else if (direction == -1 && ( mCurrNum < 0 || mCurrNum % 10 == 9 )) {
 				mOdomenterInteraction.onRoundDown(position, (Math.abs(mTargetNum) + 9 ) / 10);
 				if ( mCurrNum < 0  ){
 					mCurrNum = mCurrNum + 10;
-					mNextNum = mCurrNum + increment;
+//					mNextNum = mCurrNum + increment;
 					mTargetNum = mTargetNum + ( Math.abs(mTargetNum) + 9 ) / 10;
 					mDeltaNum = Math.abs(mTargetNum - mCurrNum);
 				}
 			}
 		}
+		mNextNum = mCurrNum + increment;
 	}
 
 	private Runnable mScrollRunnable = new Runnable() {
@@ -283,5 +284,11 @@ public class MeterNumber extends View {
 				dpVal, getResources().getDisplayMetrics());
 	}
 
+	public int getCurrentValue(){
+		return mCurrNum;
+	}
 
+	public int getTargetValue(){
+		return mTargetNum;
+	}
 }
