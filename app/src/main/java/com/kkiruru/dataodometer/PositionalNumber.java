@@ -1,64 +1,63 @@
 package com.kkiruru.dataodometer;
 
-import java.util.ArrayList;
-import java.util.List;
+import android.util.Log;
 
 /**
  * Created by kkiruru on 2016. 9. 17..
  */
 
 public class PositionalNumber {
-	private List<Integer> mNumbers = new ArrayList<>();
+	private int mValue = 0;
 
 	public PositionalNumber(){
-
+		this(0);
 	}
 
 	public PositionalNumber(int value){
-		setValue(value);
+		mValue = value;
 	}
 
-	public void setValue( int value ){
-		clear();
-		do {
-			int i = value % 10;
-			mNumbers.add(i);
-			value /= 10;
-		} while (value > 0);
+	public void setValue(int value){
+		mValue = value;
+	}
+
+	public int getValue(){
+		return mValue;
 	}
 
 	public void setPositionValue(int position, int value){
-		while( mNumbers.size() -1 <= position ){
-			mNumbers.add(0);
+		if( 10 <= value ){
+			return;
 		}
-		mNumbers.set(position, value);
+		mValue = mValue - getPositionValue(position) + getPositionValue(position) * value;
 	}
 
 
 	public int getPositionValue(int position){
-		if ( position < mNumbers.size() ){
-			return mNumbers.get(position);
-		}else{
-			return 0;
-		}
-	}
-
-
-	public int getValue(){
-		int retValue = 0;
-		for( int i = mNumbers.size() - 1; 0 <= i ; i-- ){
-			retValue = retValue * 10 + mNumbers.get(i);
-		}
-		return retValue;
+		int value = (mValue / (int)Math.pow(10, position)) % 10;
+		Log.d("PositionalNumber", "getPositionValue["+position+"] : " + value);
+		return value;
 	}
 
 
 	public int size(){
-		return mNumbers.size();
+		int length = 0;
+		int value = mValue;
+
+		if (value == 0 ){
+			return 1;
+		}
+
+		while( 0 < value ){
+			value = value / 10;
+			length++;
+		}
+
+		return length;
 	}
 
 	public void clear(){
-		mNumbers.clear();
+		mValue = 0;
 	}
 
 }

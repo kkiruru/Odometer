@@ -39,13 +39,23 @@ public class MainActivity extends AppCompatActivity {
 
     public void onIncreaseValue(View view) {
         Editable editable = mValue.getEditableText();
-        int value = Integer.parseInt(editable.toString());
+        int value = 0;
+        try {
+            value = Integer.parseInt(editable.toString());
+        }catch ( NumberFormatException e ){
+
+        }
         mOdometer.adjust(value);
     }
 
     public void onDecreaseValue(View view) {
         Editable editable = mValue.getEditableText();
-        int value = Integer.parseInt(editable.toString());
+        int value = 0;
+        try {
+            value = Integer.parseInt(editable.toString());
+        }catch ( NumberFormatException e ){
+
+        }
         mOdometer.adjust(-value);
     }
 

@@ -69,7 +69,9 @@ public class Odometer extends LinearLayout {
 
         mTarget = mCurrent = val;
 
-        if (1000 < mCurrent) {
+        if ( mCurrent < 1000) {
+            mUnitMode = UnitMode.MB;
+        }else{
             mUnitMode = UnitMode.GB;
         }
 
@@ -94,6 +96,14 @@ public class Odometer extends LinearLayout {
             Log.e("Odometer", "onCarry [" + position + "]_" + carry);
             //현재 최상위 자리에서 carry가 발생했다면, 새로운 MeterNumber를 추가한다
             if (mMeterNumbers.size() <= position + 1) {
+
+                if ( mUnitMode == UnitMode.MB && mMeterNumbers.size() == 3 ){
+                    mUnitMode = UnitMode.GB;
+                    Log.e("Odometer", " >> UnitMode.GB ");
+                    removeViewAt(0);
+                }else{
+
+                }
 
                 MeterNumber meterNumber = createMeterNumber(position + 1, 0);
                 meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
@@ -122,12 +132,6 @@ public class Odometer extends LinearLayout {
             if (mCurrentValue.getValue() == mTargetNumber.getValue()) {
                 Log.e("Odometer", "all completed ~~~ " + mCurrentValue.getValue());
             }
-
-//			if ( 1 <= position && position == mMeterNumbers.size() - 1 && value == 0 ){
-//				MeterNumber meterNumber = mMeterNumbers.get(position);
-//				removeView(meterNumber);
-//				mMeterNumbers.remove(meterNumber);
-//			}
             removeZero(mMeterNumbers);
         }
     };
@@ -154,17 +158,30 @@ public class Odometer extends LinearLayout {
     }
 
 
+
+    public void add(int value){
+        Log.d("add", "curr : " + mCurrent + ", target : " + mTarget + " -> " + (mTarget + value));
+        if ( value < 0 ){
+            return;
+        }
+
+        mTarget += value;
+
+        mTargetNumber.setValue(mTarget);
+    }
+
+
     public void adjust(int value) {
         Log.d("adjust", mTargetNumber.getValue() + " -> " + (mTargetNumber.getValue() + value));
 
-        PositionalNumber adjustValue;
+        PositionalNumber deltaValue;
 
         if (0 < value) {
             mTargetNumber.setValue(mTargetNumber.getValue() + value);
-            adjustValue = new PositionalNumber(value);
+            deltaValue = new PositionalNumber(value);
             int increment = 0;
-            for (int i = adjustValue.size() - 1; 0 <= i; i--) {
-                increment = increment * 10 + adjustValue.getPositionValue(i);
+            for (int i = deltaValue.size() - 1; 0 <= i; i--) {
+                increment = increment * 10 + deltaValue.getPositionValue(i);
                 if (i <= mMeterNumbers.size() - 1) {
                     mMeterNumbers.get(i).increase(increment);
                     increment = 0;
@@ -175,12 +192,12 @@ public class Odometer extends LinearLayout {
                 value = -mTargetNumber.getValue();
             }
             mTargetNumber.setValue(mTargetNumber.getValue() + value);
-            adjustValue = new PositionalNumber(Math.abs(value));
+            deltaValue = new PositionalNumber(Math.abs(value));
 
             int increment = 0;
 
-            for (int i = adjustValue.size() - 1; 0 <= i; i--) {
-                increment = increment * 10 + adjustValue.getPositionValue(i);
+            for (int i = deltaValue.size() - 1; 0 <= i; i--) {
+                increment = increment * 10 + deltaValue.getPositionValue(i);
                 if (i <= mMeterNumbers.size() - 1) {
                     mMeterNumbers.get(i).decrease(increment);
                     increment = 0;
