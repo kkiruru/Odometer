@@ -29,13 +29,22 @@ public class PositionalNumber {
 		if( 10 <= value ){
 			return;
 		}
-		mValue = mValue - getPositionValue(position) + getPositionValue(position) * value;
+
+		int old = getPositionValue(position);
+		if ( value == old ){
+			return;
+		}
+
+		mValue = mValue - ( getPositionValue(position) * (int)Math.pow(10, position));
+		mValue = mValue + ( value * (int)Math.pow(10, position));
+
+		Log.d("PositionalNumber", "setPositionValue["+position+"] : " + old + " > " + getPositionValue(position));
 	}
 
 
 	public int getPositionValue(int position){
 		int value = (mValue / (int)Math.pow(10, position)) % 10;
-		Log.d("PositionalNumber", "getPositionValue["+position+"] : " + value);
+//		Log.d("PositionalNumber", "getPositionValue["+position+"] : " + value);
 		return value;
 	}
 

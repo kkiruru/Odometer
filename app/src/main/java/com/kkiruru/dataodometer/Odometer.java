@@ -18,10 +18,10 @@ import java.util.List;
 public class Odometer extends LinearLayout {
     private Context mContext;
 
-    private int mCurrent = 0;
-    private int mTarget = 0;
+    private int mCurrentValue = 0;
+    private int mTargetValue = 0;
 
-    private PositionalNumber mCurrentValue = new PositionalNumber();
+    private PositionalNumber mCurrentNumber = new PositionalNumber();
     private PositionalNumber mTargetNumber = new PositionalNumber();
     private List<MeterNumber> mMeterNumbers = new ArrayList<>();
 
@@ -67,15 +67,15 @@ public class Odometer extends LinearLayout {
     public void setNumber(int val) {
         resetView();
 
-        mTarget = mCurrent = val;
+        mTargetValue = mCurrentValue = val;
 
-        if ( mCurrent < 1000) {
+        if (mCurrentValue < 1000) {
             mUnitMode = UnitMode.MB;
-        }else{
+        } else {
             mUnitMode = UnitMode.GB;
         }
 
-        mTargetNumber.setValue(val);
+        setPositionalNumber(mUnitMode, mCurrentValue, mTargetValue);
 
         for (int i = 0; i < mTargetNumber.size(); i++) {
             MeterNumber meterNumber = createMeterNumber(i, mTargetNumber.getPositionValue(i));
@@ -90,6 +90,67 @@ public class Odometer extends LinearLayout {
     }
 
 
+    private void setPositionalNumber(UnitMode mode, int currentValue, int targetValue) {
+        if (mode == UnitMode.MB) {
+            mCurrentNumber.setValue(currentValue);
+            mTargetNumber.setValue(targetValue);
+        } else {
+            mCurrentNumber.setValue(currentValue / 10);
+            mTargetNumber.setValue(targetValue / 10);
+        }
+    }
+
+
+    public void setNumberTo(int value) {
+        mTargetValue = value;
+
+        if (mCurrentValue < 1000) {
+            mUnitMode = UnitMode.MB;
+        } else {
+            mUnitMode = UnitMode.GB;
+        }
+
+        setPositionalNumber(mUnitMode, mCurrentValue, mTargetValue);
+
+        for (int i = 0; i < mTargetNumber.size(); i++) {
+            MeterNumber meterNumber = createMeterNumber(i, mTargetNumber.getPositionValue(i));
+            meterNumber.setOdomenterInteractionListener(OdomenterInteraction);
+
+            mMeterNumbers.add(meterNumber);
+        }
+
+        for (MeterNumber meterNumber : mMeterNumbers) {
+            addView(meterNumber, 0);
+        }
+    }
+
+    public void addValue(int value) {
+        Log.d("addNumber", "curr : " + mCurrentValue + ", target : " + mTargetValue + " -> " + (mTargetValue + value));
+        if (value < 0) {
+            return;
+        }
+
+        mTargetValue += value;
+
+        setNumberTo(mTargetValue);
+    }
+
+
+    public void subtractValue(int value) {
+        Log.d("subtractNumber", "curr : " + mCurrentValue + ", target : " + mTargetValue + " -> " + (mTargetValue + value));
+
+        if (value < 0) {
+            return;
+        }
+
+        mTargetValue -= value;
+        if ( mTargetValue < 0 ){
+            mTargetValue = 0;
+        }
+        setNumberTo(mTargetValue);
+    }
+
+
     private MeterNumber.OdomenterInteraction OdomenterInteraction = new MeterNumber.OdomenterInteraction() {
         @Override
         public void onCarry(int position, int carry) {
@@ -97,11 +158,11 @@ public class Odometer extends LinearLayout {
             //현재 최상위 자리에서 carry가 발생했다면, 새로운 MeterNumber를 추가한다
             if (mMeterNumbers.size() <= position + 1) {
 
-                if ( mUnitMode == UnitMode.MB && mMeterNumbers.size() == 3 ){
+                if (mUnitMode == UnitMode.MB && mMeterNumbers.size() == 3) {
                     mUnitMode = UnitMode.GB;
                     Log.e("Odometer", " >> UnitMode.GB ");
-                    removeViewAt(0);
-                }else{
+                    removeViewAt(2);
+                } else {
 
                 }
 
@@ -113,8 +174,6 @@ public class Odometer extends LinearLayout {
             } else { //자리 올림을 한다
                 mMeterNumbers.get(position + 1).increase(carry);
             }
-
-
         }
 
         @Override
@@ -128,9 +187,11 @@ public class Odometer extends LinearLayout {
         @Override
         public void onComplete(int position, int value) {
             Log.e("Odometer", "onComplete : [" + position + "]" + "_" + value);
-            mCurrentValue.setPositionValue(position, value);
-            if (mCurrentValue.getValue() == mTargetNumber.getValue()) {
-                Log.e("Odometer", "all completed ~~~ " + mCurrentValue.getValue());
+            mCurrentNumber.setPositionValue(position, value);
+            Log.e("Odometer", "__  mCurrentNumber : " + mCurrentNumber.getValue() + ", mTargetNumber : " + mTargetNumber.getValue());
+
+            if (mCurrentNumber.getValue() == mTargetNumber.getValue()) {
+                Log.e("Odometer", "__ all completed ~~~ ");
             }
             removeZero(mMeterNumbers);
         }
@@ -155,19 +216,6 @@ public class Odometer extends LinearLayout {
         mTargetNumber.clear();
         mMeterNumbers.clear();
         removeAllViews();
-    }
-
-
-
-    public void add(int value){
-        Log.d("add", "curr : " + mCurrent + ", target : " + mTarget + " -> " + (mTarget + value));
-        if ( value < 0 ){
-            return;
-        }
-
-        mTarget += value;
-
-        mTargetNumber.setValue(mTarget);
     }
 
 
