@@ -15,7 +15,7 @@ import android.view.animation.Interpolator;
 /**
  * Created by wuhaojie on 2016/7/15 11:36.
  */
-public class MeterNumber extends View {
+public class NumberRing extends View {
 	private Context mContext;
 	private int position = 0;
 	private int mDeltaNum = 0;
@@ -48,15 +48,15 @@ public class MeterNumber extends View {
 	}
 
 
-	public MeterNumber(Context context) {
+	public NumberRing(Context context) {
 		this(context, null);
 	}
 
-	public MeterNumber(Context context, AttributeSet attrs) {
+	public NumberRing(Context context, AttributeSet attrs) {
 		this(context, attrs, 0);
 	}
 
-	public MeterNumber(Context context, AttributeSet attrs, int defStyleAttr) {
+	public NumberRing(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
 
 		mContext = context;
@@ -66,7 +66,11 @@ public class MeterNumber extends View {
 		mPaint.setTextSize(mTextSize);
 		mPaint.setColor(mTextColor);
 
-		if (mTypeface != null) mPaint.setTypeface(mTypeface);
+//		mTypeface = FontUtils.helveticaNeue(context);
+
+		if (mTypeface != null){
+			mPaint.setTypeface(mTypeface);
+		}
 
 		measureTextHeight();
 	}
