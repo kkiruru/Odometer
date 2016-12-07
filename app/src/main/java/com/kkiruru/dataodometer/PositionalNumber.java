@@ -7,51 +7,53 @@ import android.util.Log;
  */
 
 public class PositionalNumber {
-	private int mValue = 0;
+	private long mValue = 0;
 
 	public PositionalNumber(){
 		this(0);
 	}
 
-	public PositionalNumber(int value){
+	public PositionalNumber(long value){
 		mValue = value;
 	}
 
-	public void setValue(int value){
+	public void setValue(long value){
 		mValue = value;
 	}
 
-	public int getValue(){
+	public long getValue(){
 		return mValue;
 	}
 
-	public void setPositionValue(int position, int value){
+	public void addValue(long value){
+		mValue += value;
+	}
+
+
+	public void setPositionValue(int position, long value){
 		if( 10 <= value ){
 			return;
 		}
 
-		int old = getPositionValue(position);
+		long old = getPositionValue(position);
 		if ( value == old ){
 			return;
 		}
 
 		mValue = mValue - ( getPositionValue(position) * (int)Math.pow(10, position));
 		mValue = mValue + ( value * (int)Math.pow(10, position));
-
-		Log.d("PositionalNumber", "setPositionValue["+position+"] : " + old + " > " + getPositionValue(position));
 	}
 
 
-	public int getPositionValue(int position){
-		int value = (mValue / (int)Math.pow(10, position)) % 10;
-//		Log.d("PositionalNumber", "getPositionValue["+position+"] : " + value);
+	public long getPositionValue(int position){
+		long value = (mValue / (int)Math.pow(10, position)) % 10;
 		return value;
 	}
 
 
 	public int size(){
 		int length = 0;
-		int value = mValue;
+		long value = mValue;
 
 		if (value == 0 ){
 			return 1;

@@ -6,20 +6,24 @@
     android:orientation="vertical"
     tools:context="com.kkiruru.dataodometer.MainActivity">
 
-    <FrameLayout
+    <LinearLayout
         android:id="@+id/data_odometer"
         android:layout_width="match_parent"
-        android:layout_height="92dp">
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
+
         <com.kkiruru.dataodometer.Odometer
             android:id="@+id/odometer"
-            android:layout_width="match_parent"
-            android:layout_height="92dp" />
-    </FrameLayout>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
 
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
         android:text="증가" />
 
     <LinearLayout
@@ -44,6 +48,7 @@
             android:layout_height="wrap_content"
             android:onClick="onIncrease"
             android:text="100" />
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -53,16 +58,15 @@
 
 
     <TextView
-        android:layout_marginTop="20dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:text="감소" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -91,32 +95,60 @@
 
 
     <LinearLayout
-        android:layout_marginTop="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:orientation="horizontal">
 
         <EditText
+            android:id="@+id/value"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:inputType="numberDecimal"
             android:ems="10"
-            android:id="@+id/value" />
+            android:inputType="numberDecimal" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
 
         <Button
-            android:id="@+id/increase"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onSettingTo"
+            android:text="설정" />
+
+        <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="onChangeValue"
-            android:text="설정" />
+            android:text="변경" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onAdd"
+            android:text="더하기" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onSubtract"
+            android:text="빼기" />
 
     </LinearLayout>
-    <Button
-        android:layout_marginTop="20dp"
-        android:id="@+id/initialize"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="onInitialize"
-        android:text="초기화" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onInitialize"
+            android:text="초기화" />
+    </LinearLayout>
 </LinearLayout>

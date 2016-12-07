@@ -1,11 +1,14 @@
 package com.kkiruru.dataodometer;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
@@ -20,25 +23,32 @@ import java.util.List;
 public class Odometer extends LinearLayout {
     private Context mContext;
 
-    private int mCurrentValue = 0;
-    private int mTargetValue = 0;
-
     private PositionalNumber mCurrentNumber = new PositionalNumber();
     private PositionalNumber mTargetNumber = new PositionalNumber();
-    private List<NumberRing> mNumberRings = new ArrayList<>();
+//    private List<NumberRing> mNumberRings = new ArrayList<>();
 
-    private TextView mUnit;
+    private NumberRing[] mNumberRings = new NumberRing[6];
+
+
     private TextView mDot;
 
-    private int mTextSize = 90;
-    private int[] mTextColors = new int[]{R.color.accent};
+    private static final int NUMBER_RING_BIG_SIZE_DP = 130;
+    private static final int NUMBER_RING_SMALL_SIZE_DP = 90;
+
     private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
 
     private UnitMode mUnitMode = UnitMode.MB;
 
     enum UnitMode {
         MB,
-        GB
+        GB,
+        TB
+    }
+
+    private OnOdometerInteractionListener mInteractionListener;
+
+    public interface OnOdometerInteractionListener {
+        void OnChangedUnit(UnitMode unitMode);
     }
 
     public Odometer(Context context) {
@@ -53,253 +63,221 @@ public class Odometer extends LinearLayout {
         super(context, attrs, defStyleAttr);
         mContext = context;
         setOrientation(HORIZONTAL);
-        setGravity(Gravity.CENTER);
 
-        mUnit = new TextView(context);
         mDot = new TextView(context);
         init();
     }
 
     private void init() {
-        mUnit.setText("MB");
+        Typeface typeface = Typeface.createFromAsset(mContext.getAssets(), "fonts/HelveticaNeue-Medium.otf");
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        layoutParams.setMargins(0, 0, 0, 0);
+
+        mDot.setLayoutParams(layoutParams);
+        mDot.setTypeface(typeface);
+        mDot.setTextSize(TypedValue.COMPLEX_UNIT_DIP, NUMBER_RING_SMALL_SIZE_DP);
+        mDot.setTextColor(ContextCompat.getColor(mContext, R.color.colorControlHighlight));
         mDot.setText(".");
+        mDot.setGravity(Gravity.BOTTOM);
+        mDot.setTranslationY(LayoutUtils.dp2Px(25));
+
+        for (int i = 0; i < 6; i++) {
+            NumberRing numberRing = createMeterNumber(i, 0);
+            numberRing.setOdometerInteractionListener(NumberRingInteraction);
+            mNumberRings[i] = numberRing;
+        }
+
         resetView();
         setNumber(0);
     }
 
-
     private void resetView() {
         mTargetNumber.clear();
-        mNumberRings.clear();
         removeAllViews();
 
-        addView(mUnit);
+        for (int i = 0; i < mNumberRings.length - 1; i++) {
+            addView(mNumberRings[i], 0);
+            mNumberRings[i].setVisibility(View.GONE);
+        }
 
-        NumberRing numberRing = createMeterNumber(0, 0);
-        numberRing.setOdomenterInteractionListener(OdomenterInteraction);
-        mNumberRings.add(numberRing);
-        addView(numberRing, 0);
-
-        numberRing = createMeterNumber(1, 1);
-        numberRing.setOdomenterInteractionListener(OdomenterInteraction);
-        mNumberRings.add(numberRing);
-        numberRing.setVisibility(View.GONE);
-        addView(numberRing, 0);
-
+        addView(mDot, 3);
         mDot.setVisibility(View.GONE);
-        addView(mDot, 0);
 
-        numberRing = createMeterNumber(2, 2);
-        numberRing.setOdomenterInteractionListener(OdomenterInteraction);
-        mNumberRings.add(numberRing);
-        numberRing.setVisibility(View.GONE);
-        addView(numberRing, 0);
+        mNumberRings[0].setVisibility(View.VISIBLE);
     }
 
-
-    private void unitMode(){
-        NumberRing numberRing = mNumberRings.get(1);
-        numberRing.setVisibility(View.VISIBLE);
-        numberRing = mNumberRings.get(2);
-        numberRing.setVisibility(View.VISIBLE);
-        mUnit.setText("GB");
-        mDot.setVisibility(View.VISIBLE);
-    }
-
-
-    public void setNumber(int value) {
-        mCurrentValue = mTargetValue = value;
-
-        if (mCurrentValue < 1000) {
-            mUnitMode = UnitMode.MB;
-            mUnit.setText("MB");
-            mDot.setVisibility(View.GONE);
-        } else {
-            mUnitMode = UnitMode.GB;
-            mUnit.setText("GB");
+    private void unitMode(long value) {
+        if (1000000 <= value) {
+            mUnitMode = UnitMode.TB;
             mDot.setVisibility(View.VISIBLE);
+            NumberRing numberRing = mNumberRings[0];
+            numberRing.setVisibility(View.GONE);
+        } else if (1000 <= value) {
+            mUnitMode = UnitMode.GB;
+            mDot.setVisibility(View.VISIBLE);
+            NumberRing numberRing = mNumberRings[0];
+            numberRing.setVisibility(View.GONE);
+        } else {
+            mUnitMode = UnitMode.MB;
+            mDot.setVisibility(View.GONE);
+            NumberRing numberRing = mNumberRings[0];
+            numberRing.setVisibility(View.VISIBLE);
         }
 
-        setPositionalNumber(mUnitMode, mCurrentValue, mTargetValue);
-
-        for (int i = 0; i < mTargetNumber.size(); i++) {
-            NumberRing numberRing;
-            if ( i < mNumberRings.size() ){
-                numberRing = mNumberRings.get(i);
-                numberRing.setNumber(mTargetNumber.getPositionValue(i));
-                numberRing.setVisibility(View.VISIBLE);
-            }else{
-                numberRing = createMeterNumber(i, mTargetNumber.getPositionValue(i));
-                numberRing.setOdomenterInteractionListener(OdomenterInteraction);
-                numberRing.setNumber(mTargetNumber.getPositionValue(i));
-                mNumberRings.add(numberRing);
-                addView(numberRing, 0);
-            }
-        }
-
-        if ( mTargetNumber.size() < mNumberRings.size() ){
-            for ( int i = mTargetNumber.size() ; i < mNumberRings.size(); i++ ){
-                NumberRing numberRing = mNumberRings.get(i);
-                numberRing.setVisibility(View.GONE);
-            }
+        if (mInteractionListener != null) {
+            mInteractionListener.OnChangedUnit(mUnitMode);
         }
     }
 
-    private NumberRing createMeterNumber(int position, int value) {
+
+    public void setNumber(long value) {
+        Log.d("Odometer", "setNumber : " + value);
+        mCurrentNumber.setValue(value);
+        mTargetNumber.setValue(value);
+
+        int i;
+        for (i = 0; i < mTargetNumber.size(); i++) {
+            NumberRing numberRing = mNumberRings[i];
+            numberRing.setVisibility(View.VISIBLE);
+            numberRing.setNumber(mTargetNumber.getPositionValue(i));
+        }
+
+        for (; i < mNumberRings.length; i++) {
+            NumberRing numberRing = mNumberRings[i];
+            numberRing.setVisibility(View.GONE);
+        }
+
+        unitMode(mCurrentNumber.getValue());
+    }
+
+    private NumberRing createMeterNumber(int position, long value) {
         NumberRing numberRing = new NumberRing(mContext);
-        numberRing.setTextColor(ContextCompat.getColor(mContext, mTextColors[0]));
-        numberRing.setTextSize(mTextSize);
+        numberRing.setTextColor(ContextCompat.getColor(mContext, R.color.colorControlHighlight));
+        numberRing.setTextSize(NUMBER_RING_BIG_SIZE_DP);
         numberRing.setInterpolator(mInterpolator);
         numberRing.setPositionalNumber(position);
         numberRing.setNumber(value);
         return numberRing;
     }
 
-    public void setNumberTo(int value) {
-        mTargetValue = value;
+    //value 설정한다
+    public void setNumberTo(long value) {
+        Log.d("Odometer", "setNumberTo : " + value);
 
-        if (mCurrentValue < 1000) {
-            mUnitMode = UnitMode.MB;
+        setNumber(mTargetNumber.getValue());
+
+        if (mTargetNumber.getValue() < value) {
+
+            Log.d("Odometer", "__  increase : " + ( value - mTargetNumber.getValue()));
+
+            mNumberRings[0].increase(value - mTargetNumber.getValue());
+            mTargetNumber.setValue(value);
         } else {
-            mUnitMode = UnitMode.GB;
+
+            Log.d("Odometer", "__  decrease : " + ( mTargetNumber.getValue() - value));
+
+            mNumberRings[0].decrease(mTargetNumber.getValue() - value);
+
+            mTargetNumber.setValue(value);
         }
+        Log.d("Odometer", "__  mTargetNumber : " +  mTargetNumber.getValue() );
+    }
 
-        setPositionalNumber(mUnitMode, mCurrentValue, mTargetValue);
+    public void add(long value) {
+        Log.d("Odometer", "add : " + value);
+        setNumberTo(mTargetNumber.getValue() + value);
+    }
 
-        for (int i = 0; i < mTargetNumber.size(); i++) {
-            NumberRing numberRing = createMeterNumber(i, mTargetNumber.getPositionValue(i));
-            numberRing.setOdomenterInteractionListener(OdomenterInteraction);
-
-            mNumberRings.add(numberRing);
-        }
-
-        for (NumberRing numberRing : mNumberRings) {
-            addView(numberRing, 0);
+    public void subtract(long value) {
+        Log.d("Odometer", "subtract " + value);
+        if ( mTargetNumber.getValue() < value){
+            setNumberTo(0);
+        }else{
+            setNumberTo(mTargetNumber.getValue() - value);
         }
     }
 
 
-    public void add(int value) {
-        PositionalNumber deltaValue;
-        mTargetNumber.setValue(mTargetNumber.getValue() + value);
-        deltaValue = new PositionalNumber(value);
-        int increment = 0;
-        for (int i = deltaValue.size() - 1; 0 <= i; i--) {
-            increment = increment * 10 + deltaValue.getPositionValue(i);
-            if (i <= mNumberRings.size() - 1) {
-                mNumberRings.get(i).increase(increment);
-                increment = 0;
-            }
-        }
-    }
-
-
-    public void subtract(int value) {
-        PositionalNumber deltaValue;
-        if (mTargetNumber.getValue() < Math.abs(value)) {
-            value = -mTargetNumber.getValue();
-        }
-        mTargetNumber.setValue(mTargetNumber.getValue() + value);
-        deltaValue = new PositionalNumber(Math.abs(value));
-
-        int increment = 0;
-
-        for (int i = deltaValue.size() - 1; 0 <= i; i--) {
-            increment = increment * 10 + deltaValue.getPositionValue(i);
-            if (i <= mNumberRings.size() - 1) {
-                mNumberRings.get(i).decrease(increment);
-                increment = 0;
-            }
-        }
-    }
-
-
-    private void setPositionalNumber(UnitMode mode, int currentValue, int targetValue) {
-        if (mode == UnitMode.MB) {
-            mCurrentNumber.setValue(currentValue);
-            mTargetNumber.setValue(targetValue);
-        } else {
-            mCurrentNumber.setValue(currentValue / 10);
-            mTargetNumber.setValue(targetValue / 10);
-        }
-    }
-
-
-    private NumberRing.OdomenterInteraction OdomenterInteraction = new NumberRing.OdomenterInteraction() {
+    private NumberRing.NumberRingInteraction NumberRingInteraction = new NumberRing.NumberRingInteraction() {
         @Override
-        public void onCarry(int position, int carry) {
-            Log.e("Odometer", "onCarry [" + position + "]_" + carry);
-            //현재 최상위 자리에서 carry가 발생했다면, 새로운 MeterNumber를 추가한다
-            if (mNumberRings.size() <= position + 1) {
-                if (mUnitMode == UnitMode.MB && mNumberRings.size() == 3) {
-                    mUnitMode = UnitMode.GB;
-                    mUnit.setText("GB");
-                    Log.e("Odometer", " >> UnitMode.GB ");
-                    removeViewAt(2);
-                } else {
+        public void onCarry(int position, long carry) {
+            Log.d("Odometer", "onCarry[" + position + "] , " + carry);
+            //현재 최상위 자리에서 carry가 발생했다면, 새로운 NumberRing을 추가한다
 
+            if (mNumberRings.length == position + 1) {
+                //GB를 벗어났다
+                Log.e("Odometer", "GB를 벗어났다");
+            }
+
+            NumberRing numberRing = mNumberRings[position + 1];
+            if (numberRing.getVisibility() == View.GONE) {
+                numberRing.setVisibility(View.VISIBLE);
+                if (position + 1 == 3) {
+                    //단위 변경이 되어야 한다
+                    Log.e("Odometer", "단위 변경이 되어야 한다");
+                } else if (position + 1 == 5) {
+                    //
+                    Log.e("Odometer", "100GB영역이다");
                 }
-
-                NumberRing numberRing = createMeterNumber(position + 1, 0);
-                numberRing.setOdomenterInteractionListener(OdomenterInteraction);
-                mNumberRings.add(numberRing);
-                addView(numberRing, 0);
+                numberRing.setNumber(0);
+                numberRing.increaseFromCurrentTo(carry);
+            } else {
                 numberRing.increase(carry);
-            } else { //자리 올림을 한다
-                mNumberRings.get(position + 1).increase(carry);
+            }
+
+        }
+
+        @Override
+        public void onRoundDown(int position, long borrow) {
+            Log.d("Odometer", "onRoundDown[" + position + "] , " + borrow);
+            if (position < mNumberRings.length - 1) {
+                mNumberRings[position + 1].decrease(borrow);
             }
         }
 
         @Override
-        public void onRoundDown(int position, int borrow) {
-            Log.e("Odometer", "onRoundDown [" + position + "]_" + borrow);
-            if (position < mNumberRings.size() - 1) {
-                mNumberRings.get(position + 1).decrease(borrow);
-            }
-        }
-
-        @Override
-        public void onComplete(int position, int value) {
-            Log.e("Odometer", "onComplete : [" + position + "]" + "_" + value);
+        public void onComplete(int position, long value) {
+            Log.d("Odometer", "onComplete[" + position + "] , " + value);
             mCurrentNumber.setPositionValue(position, value);
-            Log.e("Odometer", "__  mCurrentNumber : " + mCurrentNumber.getValue() + ", mTargetNumber : " + mTargetNumber.getValue());
-
-            if (mCurrentNumber.getValue() == mTargetNumber.getValue()) {
-                Log.e("Odometer", "__ all completed ~~~ ");
-            }
-            removeZero(mNumberRings);
+//            removeZero(mNumberRings, mNumberRings.size() - 1);
+            Log.d("Odometer", "_ mCurrentNumber : " + mCurrentNumber.getValue());
         }
     };
 
 
-    private void removeZero(List<NumberRing> numbers) {
-        if (numbers.size() <= 1) {
-            return;
-        }
-
-        NumberRing numberRing = numbers.get(numbers.size() - 1);
-        if (numberRing.getCurrentValue() == numberRing.getTargetValue() && numberRing.getCurrentValue() == 0) {
-            removeView(numberRing);
-            numbers.remove(numberRing);
-            removeZero(numbers);
-        }
-    }
-
-
-
-
-    public void adjust(int value) {
-        Log.d("adjust", mTargetNumber.getValue() + " -> " + (mTargetNumber.getValue() + value));
-
-        if (0 < value) {
-            add(value);
-        } else {
-            subtract(value);
+    private void removeZero(List<NumberRing> numbers, int index) {
+        if (0 < index) {
+            NumberRing numberRing = numbers.get(index);
+            if (numberRing != null) {
+                if (numberRing.getCurrentValue() == numberRing.getTargetValue() && numberRing.getCurrentValue() == 0
+                        || numberRing.getVisibility() == View.GONE) {
+                    numberRing.setVisibility(View.GONE);
+                    if (index <= 3) {
+                        unitMode(999);
+                    }
+                    removeZero(numbers, index - 1);
+                }
+            }
         }
     }
 
-    public int getValue() {
-        return mTargetValue;
+    public void setOdometerInteractionListener(Odometer.OnOdometerInteractionListener listener) {
+        mInteractionListener = listener;
     }
+
+    public void setTextSize(int size) {
+        for (NumberRing numberRing : mNumberRings) {
+            numberRing.setTextSize(size);
+        }
+
+        mDot.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
+    }
+
+    public int getTextSize() {
+        return ((NumberRing) mNumberRings[0]).getTextSize();
+    }
+
 }
 
