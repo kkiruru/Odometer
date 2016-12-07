@@ -213,6 +213,7 @@ public class NumberRing extends View {
                 mDeltaNum = Math.abs(mTargetNum - mCurrNum);
             } else if (direction == -1 && (mCurrNum < 0 || mCurrNum % 10 == 9)) {
                 mNumberRingInteraction.onRoundDown(position, mBorrowValue + 1);
+                mBorrowValue = 0;
                 if (mCurrNum < 0) {
                     mCurrNum = mCurrNum + 10;
 //					mNextNum = mCurrNum + increment;
@@ -257,7 +258,7 @@ public class NumberRing extends View {
 
     //현재 값을 num만큼 증가시킨다
     public void increase(long num) {
-        Log.d("NumberRing", "increase : " + num);
+        Log.d("NumberRing[" + position + "]", "increase : " + num);
         num = num + mTargetNum;
         mCurrNum = mTargetNum;
         increaseFromCurrentTo(num);
@@ -265,8 +266,8 @@ public class NumberRing extends View {
 
 
     //현재 숫자에서 num으로 증가시킨다
-    public void increaseFromCurrentTo(long num) {
-        Log.d("NumberRing", "increaseFrom : " + mCurrNum + " To : " + num);
+    private void increaseFromCurrentTo(long num) {
+        Log.d("NumberRing[" + position + "]", "increaseFrom : " + mCurrNum + " To : " + num);
         long quotient = num / 10;
         long remainder = (num % 10);
 
@@ -280,7 +281,7 @@ public class NumberRing extends View {
             return;
         }
 
-        mCarryValue += quotient;
+        mCarryValue = quotient;
 
         //현재 숫자보다 작은 숫자로 변경해야한다면 한 바퀴를 돌아야 한다
         if (remainder < mCurrNum) {
@@ -303,20 +304,23 @@ public class NumberRing extends View {
 
     //현재 값을 num만큼 감소시킨다
     public void decrease(long num) {
-        Log.d("NumberRing", "decrease : " + num);
-        long quotient = num / 10;
-        long remainder = (num % 10);
+        Log.d("NumberRing[" + position + "]", "decrease : " + num);
+        mCurrNum = mTargetNum;
+        mTargetNum = mCurrNum - num;
 
-        if ( remainder == 0 ){
-            num += mTargetNum;
-        }else{
-
+        if ( mTargetNum < 0 ){
+            mTargetNum += 10;
+            mCurrNum += 10;
         }
-        decreaseFromCurrentTo(num);
+
+        decreaseFromCurrentTo(mTargetNum);
     }
 
+
     //현재 숫자에서 num으로 감소시킨다
-    public void decreaseFromCurrentTo(long num) {
+    private void decreaseFromCurrentTo(long num) {
+        Log.d("NumberRing[" + position + "]", "decreaseFrom : " + mCurrNum + " To : " + num);
+
         long quotient = num / 10;
         long remainder = (num % 10);
 
@@ -336,6 +340,9 @@ public class NumberRing extends View {
         mTargetNum = remainder;
         mBorrowValue = quotient;
 
+        direction = -1;
+        mOffset = 0;
+        mDeltaNum = Math.abs(mTargetNum - mCurrNum);
         invalidate();
     }
 

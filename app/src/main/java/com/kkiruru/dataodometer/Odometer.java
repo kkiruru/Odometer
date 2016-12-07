@@ -167,22 +167,24 @@ public class Odometer extends LinearLayout {
         Log.d("Odometer", "setNumberTo : " + value);
 
         setNumber(mTargetNumber.getValue());
-
         if (mTargetNumber.getValue() < value) {
-
-            Log.d("Odometer", "__  increase : " + ( value - mTargetNumber.getValue()));
-
-            mNumberRings[0].increase(value - mTargetNumber.getValue());
+            Log.d("Odometer", "__  increase : " + (value - mTargetNumber.getValue()));
+            long delta = value - mTargetNumber.getValue();
             mTargetNumber.setValue(value);
+
+            mNumberRings[0].increase(delta);
         } else {
+            Log.d("Odometer", "__  decrease : " + (mTargetNumber.getValue() - value));
 
-            Log.d("Odometer", "__  decrease : " + ( mTargetNumber.getValue() - value));
-
-            mNumberRings[0].decrease(mTargetNumber.getValue() - value);
-
+            PositionalNumber delta = new PositionalNumber();
+            delta.setValue(mTargetNumber.getValue() - value);
             mTargetNumber.setValue(value);
+
+            for (int i = mNumberRings.length - 1; 0 <= i; i--) {
+                mNumberRings[i].decrease(delta.getPositionValue(i));
+            }
         }
-        Log.d("Odometer", "__  mTargetNumber : " +  mTargetNumber.getValue() );
+        Log.d("Odometer", "__  mTargetNumber : " + mTargetNumber.getValue());
     }
 
     public void add(long value) {
@@ -190,13 +192,16 @@ public class Odometer extends LinearLayout {
         setNumberTo(mTargetNumber.getValue() + value);
     }
 
+
     public void subtract(long value) {
         Log.d("Odometer", "subtract " + value);
-        if ( mTargetNumber.getValue() < value){
-            setNumberTo(0);
-        }else{
-            setNumberTo(mTargetNumber.getValue() - value);
+        if (mTargetNumber.getValue() < value) {
+            value = 0;
+        } else {
+            value = mTargetNumber.getValue() - value;
         }
+
+        setNumberTo(value);
     }
 
 
@@ -222,11 +227,8 @@ public class Odometer extends LinearLayout {
                     Log.e("Odometer", "100GB영역이다");
                 }
                 numberRing.setNumber(0);
-                numberRing.increaseFromCurrentTo(carry);
-            } else {
-                numberRing.increase(carry);
             }
-
+            numberRing.increase(carry);
         }
 
         @Override
